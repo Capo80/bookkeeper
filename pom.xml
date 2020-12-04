@@ -117,7 +117,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>pippopaperino</sonar.organization>
     <sonar.projectName>bookkeeper</sonar.projectName>
-    <sonar.login>jWzNRyUZL54yHjJ0+Pfq1JQPBTMRRaAXEhOQ5kAPwkCjI6Ibq7Fo1JaX9Dsp9qyaiPkpsKasAZiF2+3DPWjSilhVXiM39hkP003OpaNnet2m+E5/WDWHSsJ13J7FYvBX1lt5ldLzqixAYndhfTZFDKtRVDy7WTZ2Bm8/V01jwdo05el0nhtJ4HW4X09J+PyqrsW9rlulYBNtYNFgiebqosHeuGM5MglT9jhyiCZERo3EZxrgkFn/tUT8f+Fv0309A/ZFzc9Ll35y6t/KxWtd2Wr9KYe9dScOLhS1mbUklrl9oPMj302ilNdxM5C8jvfQdoAZI55HtFiEkFZplJgHu0d8QyB/LoKB34Biz4bpsvnzTACegpOKnM439IqjfX0w9xEBPJjwDKI0+L1BImuVQAh207fnVQ7X5teitLPvSX5+UCkdl/3ImeX0l53lrbHdlJ+KnJXtPvwGtdmchd1p84/tubkgCMNUSNFj1q3iHweCeNBYJVI6c7s7v/jJVSsnb2agNs/GDDvByM885lEGaAK9xEyZ/FYfoAVLK9bnYYiRc4FHKfpWvkC7Cy180aGRHv93JHTUHmTcs7ffdRjXpQKwZXA85oXKBLYOMfGIQVp2Bs4wcITo53/4VCgmieY8M+IC8Y8mbHd5lt4oveImtas52rnBZWLoLW8V+4hIR5s=</sonar.login>
+    <sonar.login>bed7b11f93bc3122dd129f7ab546163b9d7719e4</sonar.login>
     <sonar.links.homepage>https://github.com/Capo80/bookkeeper</sonar.links.homepage>
     <sonar.links.ci>https://travis-ci.org/github/Capo80/bookkeeper</sonar.links.ci>
     <sonar.links.scm>https://github.com/Capo80/bookkeeper</sonar.links.scm>
