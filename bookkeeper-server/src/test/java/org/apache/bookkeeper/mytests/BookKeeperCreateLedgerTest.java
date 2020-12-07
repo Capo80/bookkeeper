@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 @RunWith(value = Parameterized.class)
 public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
 
-    private final static int NUM_BOOKIES = 8;
     private static final Logger logger = LoggerFactory.getLogger(BookKeeperCreateLedgerTest.class);
 
     //parameters
@@ -122,10 +121,13 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
                 }
                 Assert.fail();
 
-        } catch (InterruptedException | BKException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             if (expResult)
                 //expected a ledger creation, instead got an exeption
                 Assert.fail();
+        } catch (InterruptedException | BKException e) {
+            //The test failed beacause of a system failure
+            Assert.fail();
         }
     }
 
