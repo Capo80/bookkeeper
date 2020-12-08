@@ -31,7 +31,7 @@ import org.apache.bookkeeper.client.impl.LastConfirmedAndEntryImpl;
  *
  */
 @Slf4j
-class SyncCallbackUtils {
+public class SyncCallbackUtils {
 
     /**
      * Wait for a result. This is convenience method to implement callbacks
@@ -158,7 +158,7 @@ class SyncCallbackUtils {
         }
     }
 
-    static class SyncDeleteCallback implements AsyncCallback.DeleteCallback {
+    public static class SyncDeleteCallback implements AsyncCallback.DeleteCallback {
 
         private final CompletableFuture<Void> future;
 

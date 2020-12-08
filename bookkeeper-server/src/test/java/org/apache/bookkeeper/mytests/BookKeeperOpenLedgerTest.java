@@ -81,9 +81,6 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
 
             LedgerHandle lha = bkc.openLedger(lId, digestType, password);
 
-            if (lha != null)
-                System.out.print("results: " + expResult + " " + lha.isClosed());
-
             //check if ledger is open for us (which means its closed for others)
             Assert.assertTrue(lha != null && lha.isClosed());
 
@@ -102,11 +99,9 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
     }
 
     @After
-    public void closeLedger() {
+    public void deleteLedger() {
         //Delete the ledger that we have created
         try {
-            //if(expResult)
-            //    lh.close();
             bkc.deleteLedger(lh.getId());
         } catch (InterruptedException | BKException e) {
             e.printStackTrace();
