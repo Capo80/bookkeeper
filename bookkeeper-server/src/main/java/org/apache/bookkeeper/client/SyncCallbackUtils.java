@@ -25,6 +25,8 @@ import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.client.api.LastConfirmedAndEntry;
 import org.apache.bookkeeper.client.impl.LastConfirmedAndEntryImpl;
+import org.apache.bookkeeper.net.BookieId;
+import org.apache.bookkeeper.proto.BookkeeperInternalCallbacks;
 
 /**
  * Utility for callbacks.
@@ -180,6 +182,20 @@ public class SyncCallbackUtils {
             finish(rc, null, future);
         }
     }
+    public static class SyncWriteCallback implements BookkeeperInternalCallbacks.WriteCallback {
+
+        private final CompletableFuture<Void> future;
+
+        public SyncWriteCallback(CompletableFuture<Void> future) {
+            this.future = future;
+        }
+
+        @Override
+        public void writeComplete(int rc, long ledgerId, long entryId, BookieId addr, Object ctx) {
+            finish(rc, null, future);
+        }
+    }
+
 
     static class LastAddConfirmedCallback implements AsyncCallback.AddLacCallback {
         static final LastAddConfirmedCallback INSTANCE = new LastAddConfirmedCallback();

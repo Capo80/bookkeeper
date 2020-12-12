@@ -24,7 +24,7 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
     private boolean expResult;
     private long lId;
     private AsyncCallback.DeleteCallback cb;
-    private final Object ctx;
+    private Object ctx;
 
     public BookKeeperDeleteLedgerTest(boolean expResult, long lId, AsyncCallback.DeleteCallback cb, Object ctx) {
         //Number of bookies is irrelevant in this test
@@ -38,12 +38,13 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
     }
 
     @Before
-    public void setUpLedger() {
+    public void setUpLedger() throws Exception {
         //Create the ledger we are trying to delete
         try {
             lh = bkc.createLedger(6, 5, 4, BookKeeper.DigestType.CRC32, "password".getBytes(),null);
         } catch (InterruptedException | BKException e) {
             e.printStackTrace();
+            Assert.fail();
         }
 
     }
@@ -54,7 +55,7 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
         //void asyncDeleteLedger(final long lId, final DeleteCallback cb, final Object ctx)
 
         //the ID parameter is not strictly connected to the others, however we would like to see if both callback handle errors well so we test it with both configurations
-        //The callback and control object are stricly related in my implementation, but the method allows them to be separated
+        //The callback and control object are strictly related in my implementation, but the method allows them to be separated
         // i will use the bookKeeper implementation of the Callback to test the null control object
 
         //Create my callback and control object
@@ -67,16 +68,14 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
 
         return Arrays.asList(new Object[][]{
 
-                //fail beacuse of negative or wrong id
-                {false, -12345, cb1, ctx},
-                {false, 12345, cb1, ctx},
-                {false, -12345, cb2, null},
-                {false, 12345, cb2, null},
-
-                //fail because of no callback
-                {false, 333, null, ctx},
+                //Deleting a non existent ledger is considered a successfull delete operation
+                {true, -12345, cb1, ctx},
+                {true, 12345, cb1, ctx},
+                {true, -12345, cb2, null},
+                {true, 12345, cb2, null},
 
                 //valid configurations
+                {true, 333, null, ctx},
                 {true, 333, cb1, ctx},
                 {true, 333, cb2, null},
 
@@ -89,48 +88,66 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
     @Test
     public void deleteLedgerTest() {
 
+        //reset control object
+        if (ctx != null)
+            ctx = new org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject();
+
+        //substitute with real id
         if (lId == 333)
             lId = lh.getId();
 
         bkc.asyncDeleteLedger(lId, cb, ctx);
 
-        if (ctx == null) {
-            //Using BookKeeper callback
-            try {
-                SyncCallbackUtils.waitForResult(future);
-            } catch (InterruptedException e) {
-                //we failed beacause of a system problem
-                e.printStackTrace();
-                Assert.fail();
-            } catch (BKException e) {
-                //we failed to delete the ledger - check that the error is correct
-                Assert.assertEquals(e.getMessage() ,"No such ledger exists on Metadata Server");
-            }
-
-        } else {
-            //Using my callback
-            synchronized (((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx)) {
-                while (!((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).isDeleteComplete()) {
-                    try {
-                        ((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).waitDelete();
-                    } catch (InterruptedException e) {
-                        // system failure
-                        e.printStackTrace();
+        if (cb != null)
+            if (ctx == null) {
+                //Using BookKeeper callback
+                try {
+                    SyncCallbackUtils.waitForResult(future);
+                } catch (InterruptedException e) {
+                    //we failed beacause of a system problem
+                    e.printStackTrace();
+                    Assert.fail();
+                } catch (BKException e) {
+                    //we failed to delete the ledger - check that the error is correct
+                    if (!expResult)
+                        Assert.assertEquals(e.getMessage() ,"No such ledger exists on Metadata Server");
+                    else
                         Assert.fail();
+                }
+
+            } else {
+                //Using my callback
+                synchronized (((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx)) {
+                    while (!((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).isDeleteComplete()) {
+                        try {
+                            ((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).waitDelete();
+                        } catch (InterruptedException e) {
+                            // system failure
+                            e.printStackTrace();
+                            Assert.fail();
+                        }
                     }
                 }
+
+                //the operation should always succede - even when the ledger does not exist
+                Assert.assertEquals(((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).getRc(), BKException.Code.OK);
+
             }
-
-            //the operation should always succed - even when the ledger does not exist
-            Assert.assertEquals(((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).getRc(), BKException.Code.OK);
-
+        else {
+            //if we dont pass a callback the operation still succedes, we just cant get notified of it
+            //i sleep for a bit to give time to the operation
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Assert.fail();
+            }
         }
 
         //if we are here the ledger should have been deleted
         //lets try to open it to see if its actually gone
         try {
-            LedgerHandle lh = bkc.openLedger(lId, BookKeeper.DigestType.CRC32, "password".getBytes());
-            //lh.addEntry("ciao".getBytes());
+            bkc.openLedger(lId, BookKeeper.DigestType.CRC32, "password".getBytes());
         } catch (InterruptedException e) {
             //we failed beacause of a system problem
             e.printStackTrace();

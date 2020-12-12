@@ -1,5 +1,8 @@
 package org.apache.bookkeeper.mytests;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +32,21 @@ public class Utils {
             }
         }
         return ret;
+    }
+
+    public static ByteBuf buildEntry(long ledgerId, long entryId) {
+        final ByteBuf data = Unpooled.buffer();
+        data.writeLong(ledgerId);
+        data.writeLong(entryId);
+        //data.writeLong(lastAddConfirmed);
+        return data;
+    }
+    public static ByteBuf buildEntry(long ledgerId, long entryId, byte[] dataToEnter) {
+        final ByteBuf data = Unpooled.buffer();
+        data.writeLong(ledgerId);
+        data.writeLong(entryId);
+        data.writeBytes(dataToEnter);
+        return data;
     }
 
 }
