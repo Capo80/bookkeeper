@@ -9,5 +9,5 @@ addons:
       secure: "QJdimk9KjrnC/wTtsCly7SUySh79tVNza4detyZOWhbqHIMSHnuvIjPInMR9Eqk2DG6XPlfOnFB2NI3zTC/Fjx9ExQDu/6+lzdJNPwqjdjJEIvR/WqHGgrU3pMUiEo+Z6jOrVvZEB0AGVDujIBT+pFXUe/FLLMjnbL4ap5h/8s2D4vT2DYm9nmKiwaZCqCJNgGTJhxUtggdEudhSrDIU0MPVjDQs6R8jiQRTNe5layTEl+tMHyj1p3pH1QCP8LDMImPUqJnRfz2eejHH872bO3apC3PJuhwoDUb8YMhfvVELv0ozHWwF4pemj9dhmo3EkIPAfjtuoRPdBAaJNtNq+7d/u35Q9XEdrjfE2v/2meYFsWdEwFj8H0PeSbi44ssUlz0slqxYB1pfwC+ewVqJDVSyMdeKfnKCzosXBiGWIdn7CdJDevOW04Asy6Sc6hwoM+SfGWoWj3QLnMeAybnrRctmmisf6cMeCRLqTi05QFc4Qn1FL2bTWQ+S02BUsbgjKIAXXP6QKlPn8spU4eIXMPdONTyEAETdPY3pVbPjXMRb6CM7G9s6I7Vx401v3ECjS360GIxUrMgvYqoPa8XLVNRgGCQiHO7xEaXNeQllDfxYzK5dW80wkm803DNHP3hS9W2YpYRC2Yp+RgueNJFhmnTHuKQnGWFWt2bkfw8pUzM="
 script:
   # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
-  - mvn -Dtest=BookieReadEntryTest -DfailIfNoTests=false clean verify -e org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar -Dsonar.projectKey=Capo80_bookkeeper
+  - mvn '-Dtest=org.apache.bookkeeper.mytests.*Test' -DfailIfNoTests=false clean verify -e org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar -Dsonar.projectKey=Capo80_bookkeeper
 

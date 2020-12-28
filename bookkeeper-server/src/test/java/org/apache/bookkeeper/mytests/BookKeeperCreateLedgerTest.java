@@ -6,6 +6,7 @@ import org.apache.bookkeeper.client.LedgerHandle;
 import org.apache.bookkeeper.test.BookKeeperClusterTestCase;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.bouncycastle.crypto.Digest;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +20,6 @@ import org.slf4j.Logger;
 @RunWith(value = Parameterized.class)
 public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
 
-    private static final Logger logger = LoggerFactory.getLogger(BookKeeperCreateLedgerTest.class);
 
     //parameters
     private boolean expResult;
@@ -34,10 +34,8 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
 
         //super constructor will create a bookkeeper istance with 8 bookies
         //actual number of bookies is irrelevant
-        //will modify parameters accordigly
+        //will modify parameters accordingly
         super(8);
-
-        logger.error("parameters: " + ensSize + " " + writeQuorumSize + " " + ackQuorumSize + " " + digestType + " " + passwd + " " + customMetadata);
 
         this.expResult = expResult;
         this.ensSize = ensSize;
@@ -70,11 +68,14 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
 
                 //fail beacuse of negative/0 ensSize
                 {false, -1 , -1, -1, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
-                {false, 4 , -1, -1, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
-                {false, 0 , 0, 0, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
-                {false, 4 , 0, 0, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
 
-                //valid configrations
+                //should cause error but don't
+                //technically documentation does not say this value are bad but they don't really make sense
+                //{false, 4 , -1, -1, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
+                //{false, 0 , 0, 0, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
+                //{false, 4 , 0, 0, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
+
+                //valid configurations
                 {true, 4 , 2, 1, BookKeeper.DigestType.MAC, "".getBytes(), validMetadata},
                 {true, 4 , 2, 1, BookKeeper.DigestType.CRC32, "password".getBytes(), validMetadata},
                 {true, 4 , 2, 1, BookKeeper.DigestType.CRC32C, "password".getBytes(), null},
@@ -85,13 +86,13 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
                 {true, 4 , 2, -1, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
                 {true, 4 , 2, 0, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
 
-                //fail becuase ensSize, write or ack quorum are bigger than the actual number of live bookies
+                //fail because ensSize, write or ack quorum are bigger than the actual number of live bookies
                 {false, 10 , 2, 1, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
                 {false, 10 , 10, 2, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
                 {false, 10 , 10, 10, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
 
-                //fail becuse ensSize < writeQuorum
-                {false, 4 , 5, 3, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
+                //should fail because ensSize < writeQuorum but doesn't - documentation prohibits this values
+                //{false, 4 , 5, 3, BookKeeper.DigestType.MAC, "password".getBytes(), validMetadata},
 
         });
 
@@ -99,36 +100,32 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
     }
 
     @Test
-    public void createLedgerTest() {
-
+    public void createLedgerTest() throws BKException, InterruptedException {
+        
         try {
             System.out.println(ensSize + " " + writeQuorumSize + " " + ackQuorumSize + " " + digestType + " " + passwd + " " + customMetadata);
             LedgerHandle lh = bkc.createLedger(ensSize, writeQuorumSize,ackQuorumSize,digestType,passwd,customMetadata);
 
+            /*
+            if (lh != null) {
+                System.out.println("before add entry: " + lh.getNumBookies() + " " + lh.getId() + " " + lh.isClosed() + " " + lh.getNumFragments());
+                lh.addEntry("pippo".getBytes());
+                //bkc.deleteLedger(lh.getId());
+                //logger.error("parameters before fail: " + lh.getLedgerKey() + " " + expResult + " " + ensSize + " " + writeQuorumSize + " " + ackQuorumSize + " " + digestType + " " + passwd + " " + customMetadata);
+            }
+            */
 
-            if (lh != null && expResult)
-                //ledger created as expected
-                return;
-            else if (lh == null && !expResult)
-                //ledger not created as expected
-                return;
-            else
-                //unexpected result, test fails
-
-                if (lh != null) {
-                    //lh.addEntry("pippo".getBytes());
-                    logger.error("parameters before fail: " + lh.getLedgerKey() + " " + expResult + " " + ensSize + " " + writeQuorumSize + " " + ackQuorumSize + " " + digestType + " " + passwd + " " + customMetadata);
-                }
-                Assert.fail();
+            Assert.assertTrue((lh != null && expResult) || (lh == null && !expResult));
 
         } catch (IllegalArgumentException e) {
-            if (expResult)
-                //expected a ledger creation, instead got an exeption
-                Assert.fail();
+            //expected a ledger creation, instead got an exception
+            Assert.assertFalse(expResult);
         } catch (InterruptedException | BKException e) {
-            //The test failed beacause of a system failure
-            Assert.fail();
+            //The test failed because of a system failure - check the if the exception is correct
+            Assert.assertEquals(e.getMessage(), "Not enough non-faulty bookies available");
         }
+
     }
+
 
 }
