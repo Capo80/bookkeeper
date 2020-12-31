@@ -22,8 +22,9 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
     private long lId;
     private BookKeeper.DigestType digestType;
     private byte[] password;
+    private boolean closed;
 
-    public BookKeeperOpenLedgerTest(boolean expResult, long lId, BookKeeper.DigestType digestType, byte[] password) {
+    public BookKeeperOpenLedgerTest(boolean expResult, long lId, BookKeeper.DigestType digestType, byte[] password, boolean closed) {
         //Number of bookies is irrelevant in this test
         super(8);
 
@@ -31,6 +32,7 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
         this.lId = lId;
         this.digestType = digestType;
         this.password = password;
+        this.closed = closed;
     }
 
     @Before
@@ -53,18 +55,21 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
         return Arrays.asList(new Object[][]{
 
                 //fail beacuse of negative or wrong id
-                {false, -12345, BookKeeper.DigestType.MAC, "password".getBytes()},
-                {false, 12345, BookKeeper.DigestType.MAC, "password".getBytes()},
+                {false, -12345, BookKeeper.DigestType.MAC, "password".getBytes(), false},
+                {false, 12345, BookKeeper.DigestType.MAC, "password".getBytes(), false},
 
                 //fail because of wrong password
-                {false, 333, BookKeeper.DigestType.MAC, "bad_password".getBytes()},
-                {false, 333, BookKeeper.DigestType.MAC, "".getBytes()},
+                {false, 333, BookKeeper.DigestType.MAC, "bad_password".getBytes(), false},
+                {false, 333, BookKeeper.DigestType.MAC, "".getBytes(), false},
+
+                //fail because closed
+                {true, 333, BookKeeper.DigestType.MAC, "password".getBytes(), true},
 
                 //valid configurations
-                {true, 333, BookKeeper.DigestType.MAC, "password".getBytes()},
-                {true, 333, BookKeeper.DigestType.CRC32C, "password".getBytes()},
-                {true, 333, BookKeeper.DigestType.CRC32, "password".getBytes()},
-                {true, 333, BookKeeper.DigestType.DUMMY, "password".getBytes()},
+                {true, 333, BookKeeper.DigestType.MAC, "password".getBytes(),false},
+                {true, 333, BookKeeper.DigestType.CRC32C, "password".getBytes(),false},
+                {true, 333, BookKeeper.DigestType.CRC32, "password".getBytes(), false},
+                {true, 333, BookKeeper.DigestType.DUMMY, "password".getBytes(), false},
 
 
 
@@ -79,6 +84,9 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
             lId = lh.getId();
         try {
 
+            if (closed)
+                bkc.close();
+
             LedgerHandle lha = bkc.openLedger(lId, digestType, password);
 
             //check if ledger is open for us (which means its closed for others)
@@ -90,7 +98,9 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
             Assert.fail();
         } catch (BKException e) {
             //we failed to open the ledger - check if the error is correct
-            if (!Arrays.equals(password, "password".getBytes()))
+            if (closed)
+                Assert.assertEquals(e.getMessage() ,"BookKeeper client is closed");
+            else if (!Arrays.equals(password, "password".getBytes()))
                 Assert.assertEquals(e.getMessage() ,"Attempted to access ledger using the wrong password");
             else
                 Assert.assertEquals(e.getMessage() ,"No such ledger exists on Metadata Server");

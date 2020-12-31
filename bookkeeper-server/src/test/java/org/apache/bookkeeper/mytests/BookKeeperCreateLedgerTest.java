@@ -114,12 +114,11 @@ public class BookKeeperCreateLedgerTest extends BookKeeperClusterTestCase {
                 //logger.error("parameters before fail: " + lh.getLedgerKey() + " " + expResult + " " + ensSize + " " + writeQuorumSize + " " + ackQuorumSize + " " + digestType + " " + passwd + " " + customMetadata);
             }
             */
-
             Assert.assertTrue((lh != null && expResult) || (lh == null && !expResult));
 
         } catch (IllegalArgumentException e) {
             //expected a ledger creation, instead got an exception
-            Assert.assertFalse(expResult);
+            Assert.assertEquals(e.getMessage(), "Illegal Capacity: -1");
         } catch (InterruptedException | BKException e) {
             //The test failed because of a system failure - check the if the exception is correct
             Assert.assertEquals(e.getMessage(), "Not enough non-faulty bookies available");

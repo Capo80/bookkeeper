@@ -25,8 +25,9 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
     private long lId;
     private AsyncCallback.DeleteCallback cb;
     private Object ctx;
+    private boolean closed;
 
-    public BookKeeperDeleteLedgerTest(boolean expResult, long lId, AsyncCallback.DeleteCallback cb, Object ctx) {
+    public BookKeeperDeleteLedgerTest(boolean expResult, long lId, AsyncCallback.DeleteCallback cb, Object ctx, boolean closed) {
         //Number of bookies is irrelevant in this test
         super(8);
 
@@ -34,7 +35,7 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
         this.lId = lId;
         this.cb = cb;
         this.ctx = ctx;
-
+        this.closed = closed;
     }
 
     @Before
@@ -68,16 +69,19 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
 
         return Arrays.asList(new Object[][]{
 
-                //Deleting a non existent ledger is considered a successfull delete operation
-                {true, -12345, cb1, ctx},
-                {true, 12345, cb1, ctx},
-                {true, -12345, cb2, null},
-                {true, 12345, cb2, null},
+                //fail because of closed bookkeeper
+                {true, -12345, cb1, ctx, true},
+
+                //Deleting a non existent ledger is considered a successful delete operation
+                {true, -12345, cb1, ctx, false},
+                {true, 12345, cb1, ctx, false},
+                {true, -12345, cb2, null, false},
+                {true, 12345, cb2, null, false},
 
                 //valid configurations
-                {true, 333, null, ctx},
-                {true, 333, cb1, ctx},
-                {true, 333, cb2, null},
+                {true, 333, null, ctx, false},
+                {true, 333, cb1, ctx, false},
+                {true, 333, cb2, null, false},
 
 
         });
@@ -86,7 +90,12 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
 
 
     @Test
-    public void deleteLedgerTest() {
+    public void deleteLedgerTest() throws BKException, InterruptedException {
+
+        //close if needed
+        if (closed)
+            bkc.close();
+
 
         //reset control object
         if (ctx != null)
@@ -104,12 +113,14 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
                 try {
                     SyncCallbackUtils.waitForResult(future);
                 } catch (InterruptedException e) {
-                    //we failed beacause of a system problem
+                    //we failed because of a system problem
                     e.printStackTrace();
                     Assert.fail();
                 } catch (BKException e) {
                     //we failed to delete the ledger - check that the error is correct
-                    if (!expResult)
+                    if (closed)
+                        Assert.assertEquals(e.getMessage() ,"BookKeeper client is closed");
+                    else if (!expResult)
                         Assert.assertEquals(e.getMessage() ,"No such ledger exists on Metadata Server");
                     else
                         Assert.fail();
@@ -129,12 +140,15 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
                     }
                 }
 
-                //the operation should always succede - even when the ledger does not exist
-                Assert.assertEquals(((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).getRc(), BKException.Code.OK);
+                if (closed)
+                    Assert.assertEquals(((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).getRc(), BKException.Code.ClientClosedException);
+                else
+                    //the operation should always succeed except when the client is closed - even when the ledger does not exist
+                    Assert.assertEquals(((org.apache.bookkeeper.mytests.AsyncCallback.DeleteControlObject) ctx).getRc(), BKException.Code.OK);
 
             }
         else {
-            //if we dont pass a callback the operation still succedes, we just cant get notified of it
+            //if we don/t pass a callback the operation still succeeds, we just cant get notified of it
             //i sleep for a bit to give time to the operation
             try {
                 Thread.sleep(500);
@@ -149,12 +163,14 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
         try {
             bkc.openLedger(lId, BookKeeper.DigestType.CRC32, "password".getBytes());
         } catch (InterruptedException e) {
-            //we failed beacause of a system problem
+            //we failed because of a system problem
             e.printStackTrace();
             Assert.fail();
         } catch (BKException e) {
-            //if we successfully deleted the ledger we should get this error
-            Assert.assertEquals(e.getMessage() ,"No such ledger exists on Metadata Server");
+            if (!closed) {
+                //if we successfully deleted the ledger we should get this error
+                Assert.assertEquals(e.getMessage(), "No such ledger exists on Metadata Server");
+            }
             return;
         }
 
