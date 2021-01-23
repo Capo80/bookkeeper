@@ -55,7 +55,6 @@ public class BookKeeperOpenLedgerTest extends BookKeeperClusterTestCase {
         return Arrays.asList(new Object[][]{
 
                 //fail beacuse of negative or wrong id
-                {false, -12345, BookKeeper.DigestType.MAC, "password".getBytes(), false},
                 {false, 12345, BookKeeper.DigestType.MAC, "password".getBytes(), false},
 
                 //fail because of wrong password

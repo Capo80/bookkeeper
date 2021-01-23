@@ -70,7 +70,7 @@ public class BookKeeperDeleteLedgerTest extends BookKeeperClusterTestCase {
         return Arrays.asList(new Object[][]{
 
                 //fail because of closed bookkeeper
-                {true, -12345, cb1, ctx, true},
+                {false, -12345, cb1, ctx, true},
 
                 //Deleting a non existent ledger is considered a successful delete operation
                 {true, -12345, cb1, ctx, false},
